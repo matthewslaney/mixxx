@@ -1651,9 +1651,14 @@ bool WTrackTableView::setCurrentTrackId(const TrackId& trackId, int column, bool
     }
 
     QModelIndex idx = model()->index(trackRows[0], column);
-    // In case the column is not visible pick the left-most one
-    if (isIndexHidden(idx)) {
-        idx = model()->index(idx.row(), columnAt(0));
+    // In case the column is invalid, e.g. -1 if no column has been saved,
+    // or not visible pick the left-most one. isIndexHidden() requires a
+    // valid index.
+    if (!idx.isValid() || isIndexHidden(idx)) {
+        idx = model()->index(trackRows[0], columnAt(0));
+    }
+    if (!idx.isValid()) {
+        return false;
     }
     selectRow(idx.row());
     pSelectionModel->setCurrentIndex(idx,
