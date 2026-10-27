@@ -5,6 +5,7 @@
 #if defined(Q_OS_ANDROID)
 #include <QJniObject>
 #endif
+#include <mutex>
 #include <optional>
 #include <string>
 #include <vector>
@@ -188,6 +189,13 @@ class DeviceInfo final {
 
     std::vector<uint8_t> m_reportDescriptor;
 };
+
+/// hidapi is not thread-safe. Its macOS backend shares one device manager
+/// between all calls, and concurrent calls of hid_open() from multiple
+/// threads corrupt the heap. Hold this mutex for all calls that open,
+/// enumerate or release devices, e.g. while report descriptors are fetched
+/// in the background.
+std::mutex& hidApiMutex();
 
 } // namespace hid
 

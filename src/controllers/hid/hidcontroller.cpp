@@ -185,6 +185,9 @@ int HidController::open(const QString& resourcePath) {
     qCInfo(m_logBase) << "Opening HID device" << getName() << "by HID path"
                       << m_deviceInfo.pathRaw();
 
+    // The report descriptors of other controllers might be fetched
+    // concurrently in the background
+    std::unique_lock<std::mutex> hidApiLock(mixxx::hid::hidApiMutex());
     hid_device* pHidDevice = hid_open_path(m_deviceInfo.pathRaw());
 
     // If that fails, try to open device with vendor/product/serial #
@@ -247,6 +250,7 @@ int HidController::open(const QString& resourcePath) {
                                                         kMaxHidErrorMessageSize));
         return -1;
     }
+    hidApiLock.unlock();
 #endif
 
     // Set hid controller to non-blocking
@@ -406,6 +410,8 @@ void HidController::fetchReportDescriptorInBackground() {
             return;
         }
 
+        // The background tasks of all controllers run concurrently
+        const std::lock_guard<std::mutex> hidApiLock(mixxx::hid::hidApiMutex());
         hid_device* pHidDevice = hid_open_path(this->m_deviceInfo.pathRaw());
         if (!pHidDevice) {
             pHidDevice = hid_open(this->m_deviceInfo.getVendorId(),

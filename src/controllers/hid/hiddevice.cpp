@@ -192,6 +192,11 @@ bool DeviceInfo::matchProductInfo(
     return true;
 }
 
+std::mutex& hidApiMutex() {
+    static std::mutex s_mutex;
+    return s_mutex;
+}
+
 } // namespace hid
 
 } // namespace mixxx

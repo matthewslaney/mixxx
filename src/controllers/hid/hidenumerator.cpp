@@ -122,6 +122,7 @@ HidEnumerator::~HidEnumerator() {
     while (m_devices.size() > 0) {
         delete m_devices.takeLast();
     }
+    const std::lock_guard<std::mutex> hidApiLock(mixxx::hid::hidApiMutex());
     hid_exit();
 }
 
@@ -184,7 +185,11 @@ QList<Controller*> HidEnumerator::queryDevices() {
 #else
 
     QStringList enumeratedDevices;
-    hid_device_info* p_device_info_list = hid_enumerate(0x0, 0x0);
+    hid_device_info* p_device_info_list;
+    {
+        const std::lock_guard<std::mutex> hidApiLock(mixxx::hid::hidApiMutex());
+        p_device_info_list = hid_enumerate(0x0, 0x0);
+    }
     for (const auto* p_device_info = p_device_info_list;
             p_device_info;
             p_device_info = p_device_info->next) {
